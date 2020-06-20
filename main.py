@@ -50,7 +50,7 @@ root.geometry('420x600')
 
 l1 = Label(text="Pocegram", font=("Comic Sans MS", 24, "bold"))
 text = Text(width=49, height=30)
-b1 = Button(text="Отправить", width=12,height=1)
+b1 = Button(text="Отправить", width=12, height=1)
 e1 = Entry(width=49)
 elog = Entry(width=20)
 epassw = Entry(width=20)
