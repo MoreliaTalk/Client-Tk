@@ -2,8 +2,15 @@ import threading
 # import random
 import requests
 from time import sleep
-from tkinter import *
-
+from tkinter import Tk
+from tkinter import END
+from tkinter import Label
+from tkinter import Button
+from tkinter import Text
+from tkinter import Entry
+from tkinter import Scrollbar
+from tkinter import RIGHT
+from tkinter import Y
 from datetime import datetime
 
 
@@ -41,7 +48,7 @@ def send_message():
 root = Tk()
 root.geometry('420x600')
 
-l1 = Label(text="MoreliaTalk", font=("Comic Sans MS", 24, "bold"))
+l1 = Label(text="Pocegram", font=("Comic Sans MS", 24, "bold"))
 text = Text(width=49, height=30)
 b1 = Button(text="Отправить", width=12, height=1)
 e1 = Entry(width=49)
