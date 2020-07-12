@@ -1,71 +1,99 @@
 import threading
-# import random
-import requests
+import json
+import asyncio
+import aiohttp
 from time import sleep
-from tkinter import Tk
-from tkinter import END
-from tkinter import Label
-from tkinter import Button
-from tkinter import Text
-from tkinter import Entry
-from tkinter import Scrollbar
-from tkinter import RIGHT
-from tkinter import Y
+from tkinter import *
+from tkinter import scrolledtext 
 from datetime import datetime
+from tkinter import messagebox as mb
 
+ws = None
 
-def update_messages():
-    lasttimestamp = 0.0
+async def update_mes():
+    global a
+    global ws
     i = 1.0
-    while True:
-        response = requests.get("https://serverpocegram.pythonanywhere.com/get_messages",
-                                params={"after": lasttimestamp}
-                                )
-        messages = response.json()["messages"]
-        for message in messages:
-            dt = datetime.fromtimestamp(message["timestamp"])
-            dt = str(dt)[:-7]
-            dt = dt[11:19]
-            text.insert(i, "[" + dt + " " + message["username"] + "]\n")
-            i += 1.0
-            text.insert(i, message["text"] + "\n")
-            i += 1.0
-            lasttimestamp = message["timestamp"]
-        sleep(1)
+    async with aiohttp.ClientSession() as session:
+        async with session.ws_connect('ws://localhost:8000/ws') as ws:
+            async for not_json_msg in ws:
+                message = not_json_msg.json()
+                if message["mode"] == "message":
+                    text.config(state=NORMAL)
+                    dt = datetime.fromtimestamp(message["timestamp"])
+                    dt = str(dt)[:-7]
+                    dt = dt[11:19]
+                    text.insert(i, "[" + dt + " " + message["username"] + "]\n")
+                    i += 1.0
+                    text.insert(i, message["text"] + "\n")
+                    i += 1.0
+                    text.insert(i, "\n ")
+                    i += 1.0
+                    text.config(state=DISABLED)
+                elif message["mode"] == "reg":
+                    if message["status"]=="true":
+                        mes_box_reg_info(True,"Успешный вход!")
+                        a = True
+                    elif message["status"]=="false":
+                        mes_box_reg_info(False,"Неправильный пароль! Повторите попытку")
+                        a = False
+                    elif message["status"]=="newreg":
+                        mes_box_reg_info(True,"Успешная регистрация!")
+                        a = True
+
+async def send_message():
+    if a == True:
+        message = json.dumps({
+                                                "mode": "message",
+                                                "username": elog.get(),
+                                                "text": e1.get()
+                                                })
+        await ws.send_str(message)
+        e1.delete(0, END)
+    else:
+        mb.showerror("Уведомление","Сначала авторизуйся!")
 
 
-def send_message():
-    url = "https://serverpocegram.pythonanywhere.com/send_message"
-    text = e1.get()
-    requests.get(url, json={
-                            "username": elog.get(),
-                            "password": epassw.get(),
-                            "text": text
-                            })
-    e1.delete(0, END)
+async def reg_user():
+    message = json.dumps({
+                                            "mode": "reg",
+                                            "username": elog.get(),
+                                            "password": epassw.get()
+                                            })
+    await ws.send_str(message)
 
+def mes_box_reg_info(error,text):
+    if error == False:
+        mb.showerror("Уведомление",text)
+    else:
+        mb.showinfo("Уведомление",text)
 
 root = Tk()
 root.geometry('420x600')
 
-l1 = Label(text="Pocegram", font=("Comic Sans MS", 24, "bold"))
-text = Text(width=49, height=30)
+l1 = Label(text="MoreliaTalk", font=("Comic Sans MS", 24, "bold"))
+text = scrolledtext.ScrolledText(width=49, height=30,state=DISABLED)
 b1 = Button(text="Отправить", width=12, height=1)
 e1 = Entry(width=49)
+
 elog = Entry(width=20)
 epassw = Entry(width=20)
-scroll = Scrollbar(command=text.yview)
-b1.config(command=send_message)
+b_send_userdata = Button(text="Авторизоваться", width=12)
+b_send_userdata.config(command=lambda:asyncio.run(reg_user()))
 
-threadview = threading.Thread(target=update_messages)
-threadview.start()
-
+b1.config(command=lambda:asyncio.run(send_message()))
 l1.pack()
-elog.place(y=50, x=50)
-epassw.place(y=50, x=230)
-scroll.pack(side=RIGHT, fill=Y)
-text.config(yscrollcommand=scroll.set)
+
+elog.place(y=50, x=20)
+epassw.place(y=50, x=160)
+b_send_userdata.place(y=50, x=300)
+
 b1.place(y=570, x=307)
 e1.place(y=570, x=5)
 text.place(x=5, y=80)
+
+t = threading.Thread(target=lambda:asyncio.run(update_mes()))
+
+t.start()
 root.mainloop()
+
