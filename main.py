@@ -15,7 +15,7 @@ async def update_mes():
     global ws
     i = 1.0
     async with aiohttp.ClientSession() as session:
-        async with session.ws_connect('ws://localhost:8000/ws') as ws:
+        async with session.ws_connect('ws://77.50.90.123:8000/ws') as ws:
             async for not_json_msg in ws:
                 message = not_json_msg.json()
                 if message["mode"] == "message":
